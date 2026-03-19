@@ -12,7 +12,17 @@ dev-frontend:
 
 dev-backend:
 	@echo "Starting backend development server..."
-	@cd backend && langgraph dev
+	@cd backend && \
+	if command -v langgraph >/dev/null 2>&1; then \
+		langgraph dev; \
+	elif python -c "import langgraph_cli" >/dev/null 2>&1; then \
+		python -m langgraph_cli.cli dev; \
+	elif command -v uv >/dev/null 2>&1; then \
+		uv run --with-editable . langgraph dev; \
+	else \
+		echo "Error: LangGraph CLI is not available. Install backend dependencies (e.g. 'cd backend && pip install .')." >&2; \
+		exit 127; \
+	fi
 
 # Run frontend and backend concurrently
 dev:
