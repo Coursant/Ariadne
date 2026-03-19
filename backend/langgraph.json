@@ -1,7 +1,8 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "agent": "./src/agent/graph.py:graph"
+    "agent": "./src/agent/graph.py:graph",
+    "reasoning_agent": "./src/agent/reasoning_graph.py:reasoning_graph"
   },
   "http": {
     "app": "./src/agent/app.py:app"
