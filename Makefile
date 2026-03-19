@@ -13,14 +13,23 @@ dev-frontend:
 dev-backend:
 	@echo "Starting backend development server..."
 	@cd backend && \
+	PY_CMD=; \
+	if command -v python3 >/dev/null 2>&1; then \
+		PY_CMD=python3; \
+	elif command -v python >/dev/null 2>&1; then \
+		PY_CMD=python; \
+	fi; \
 	if command -v langgraph >/dev/null 2>&1; then \
 		langgraph dev; \
-	elif python -c "import langgraph_cli" >/dev/null 2>&1; then \
-		python -m langgraph_cli.cli dev; \
+	elif [ -n "$$PY_CMD" ] && $$PY_CMD -c "import langgraph_cli.cli" >/dev/null 2>&1; then \
+		$$PY_CMD -m langgraph_cli.cli dev; \
 	elif command -v uv >/dev/null 2>&1; then \
-		uv run --with-editable . langgraph dev; \
+		uv run langgraph dev; \
+	elif [ -n "$$PY_CMD" ]; then \
+		echo "Error: LangGraph CLI is not available. From the backend directory, install dependencies (e.g. '$$PY_CMD -m pip install -e .'), or run with uv (e.g. 'uv run langgraph dev')." >&2; \
+		exit 127; \
 	else \
-		echo "Error: LangGraph CLI is not available. Install backend dependencies (e.g. 'cd backend && pip install .')." >&2; \
+		echo "Error: LangGraph CLI is not available. Install backend dependencies (e.g. 'pip install -e .') or run with uv (e.g. 'uv run langgraph dev')." >&2; \
 		exit 127; \
 	fi
 
