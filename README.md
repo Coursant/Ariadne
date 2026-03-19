@@ -21,6 +21,47 @@ The project is divided into two main directories:
 -   `frontend/`: Contains the React application built with Vite.
 -   `backend/`: Contains the LangGraph/FastAPI application, including the research agent logic.
 
+### Codebase Structure (Detailed)
+
+```text
+Ariadne/
+├── frontend/                       # React + Vite UI
+│   ├── src/
+│   │   ├── main.tsx                # Frontend entry (mounts App with BrowserRouter)
+│   │   ├── App.tsx                 # Main app container, stream/event orchestration
+│   │   ├── global.css              # Global styles
+│   │   ├── components/
+│   │   │   ├── WelcomeScreen.tsx   # Initial landing screen
+│   │   │   ├── InputForm.tsx       # User input + effort/model selectors
+│   │   │   ├── ChatMessagesView.tsx# Chat view + markdown rendering
+│   │   │   ├── ActivityTimeline.tsx# Displays research progress timeline
+│   │   │   └── ui/                 # Reusable UI primitives (button, card, select, etc.)
+│   │   └── lib/utils.ts            # Frontend utility helpers
+│   ├── package.json                # Frontend scripts (dev/build/lint)
+│   └── vite.config.ts              # Vite configuration
+├── backend/                        # LangGraph + FastAPI service
+│   ├── src/agent/
+│   │   ├── app.py                  # FastAPI app, serves built frontend under /app
+│   │   ├── graph.py                # Main research graph (query → search → reflection → answer)
+│   │   ├── reasoning_graph.py      # Constraint-solving/iterative reasoning graph
+│   │   ├── state.py                # Typed state schemas for research graph
+│   │   ├── reasoning_state.py      # Typed state schema for reasoning graph
+│   │   ├── configuration.py        # Runtime model/loop configuration
+│   │   ├── prompts.py              # Prompt templates for research graph
+│   │   ├── reasoning_prompts.py    # Prompt templates for reasoning graph
+│   │   ├── tools_and_schemas.py    # Pydantic schemas (query/reflection structured output)
+│   │   ├── reasoning_schemas.py    # Pydantic schemas for reasoning pipeline
+│   │   └── utils.py                # Citation parsing/url resolving helper functions
+│   ├── examples/
+│   │   ├── cli_research.py         # CLI demo for research graph
+│   │   └── demo_reasoning.py       # CLI demo for reasoning graph
+│   ├── langgraph.json              # Graph registration (agent/reasoning_agent + HTTP app)
+│   └── pyproject.toml              # Backend dependencies and tooling config
+├── Dockerfile                      # Multi-stage build: frontend build + backend runtime
+├── docker-compose.yml              # Local production-like orchestration
+└── Makefile                        # Root dev command (starts frontend + backend)
+```
+
 ## Getting Started: Development and Local Testing
 
 Follow these steps to get the application running locally for development and testing.
