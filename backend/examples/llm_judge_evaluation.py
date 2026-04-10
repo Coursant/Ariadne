@@ -60,6 +60,7 @@ class CaseResult:
     rationale: str
     missing_requirements: list[str]
     agent_output: str
+    error: str = ""
 
 
 class CasesFileEntry(TypedDict):
@@ -167,7 +168,13 @@ def _run_reasoning_case(case: EvaluationCase, agent_model: str) -> str:
         }
     )
     output = result.get("final_conclusion")
-    return output if isinstance(output, str) else ""
+    if isinstance(output, str) and output.strip():
+        return output
+    raise RuntimeError(
+        "Reasoning agent did not return a valid final_conclusion "
+        f"for case {case.case_id}. Received type={type(output).__name__}, "
+        f"value={output!r}."
+    )
 
 
 def _run_research_case(case: EvaluationCase, agent_model: str) -> str:
@@ -183,8 +190,15 @@ def _run_research_case(case: EvaluationCase, agent_model: str) -> str:
     if isinstance(messages, list) and messages:
         last_message = messages[-1]
         content = getattr(last_message, "content", "")
-        return content if isinstance(content, str) else str(content)
-    return ""
+        if isinstance(content, str) and content.strip():
+            return content
+        text_content = str(content)
+        if text_content.strip():
+            return text_content
+    raise RuntimeError(
+        "Research agent did not return a valid final message "
+        f"for case {case.case_id}. messages={messages!r}."
+    )
 
 
 def _run_agent(case: EvaluationCase, agent_model: str) -> str:
@@ -218,17 +232,22 @@ Agent output:
 
 Scoring rubric:
 - 1.0: fully completed all requirements from expected outcome.
-- 0.7~0.9: mostly complete, minor missing detail.
-- 0.4~0.6: partially complete.
-- 0.0~0.3: failed to complete core task.
+- 0.7-0.9: mostly complete, minor missing detail.
+- 0.4-0.6: partially complete.
+- 0.0-0.3: failed to complete core task.
 """
     return cast(JudgeVerdict, structured_judge.invoke(prompt))
 
 
 def _write_report(path: Path, case_results: list[CaseResult]) -> None:
-    passed_count = sum(1 for item in case_results if item.passed)
+    passed_count = 0
+    total_score = 0.0
+    for item in case_results:
+        if item.passed:
+            passed_count += 1
+        total_score += item.score
     total = len(case_results)
-    avg_score = sum(item.score for item in case_results) / total if total else 0.0
+    avg_score = total_score / total if total else 0.0
     report = {
         "generated_at": datetime.now(UTC).isoformat(),
         "total_cases": total,
@@ -251,20 +270,34 @@ def main() -> None:
     results: list[CaseResult] = []
 
     for case in cases:
-        agent_output = _run_agent(case, args.agent_model)
-        verdict = _judge_case(case, agent_output, args.judge_model)
-        case_result = CaseResult(
-            case_id=case.case_id,
-            agent=case.agent,
-            passed=verdict.passed,
-            score=verdict.score,
-            rationale=verdict.rationale,
-            missing_requirements=verdict.missing_requirements,
-            agent_output=agent_output,
-        )
+        try:
+            agent_output = _run_agent(case, args.agent_model)
+            verdict = _judge_case(case, agent_output, args.judge_model)
+            case_result = CaseResult(
+                case_id=case.case_id,
+                agent=case.agent,
+                passed=verdict.passed,
+                score=verdict.score,
+                rationale=verdict.rationale,
+                missing_requirements=verdict.missing_requirements,
+                agent_output=agent_output,
+            )
+        except Exception as error:
+            case_result = CaseResult(
+                case_id=case.case_id,
+                agent=case.agent,
+                passed=False,
+                score=0.0,
+                rationale="Evaluation pipeline error.",
+                missing_requirements=["Execution failed before a valid judgment."],
+                agent_output="",
+                error=str(error),
+            )
         results.append(case_result)
         status = "PASS" if case_result.passed else "FAIL"
         print(f"[{status}] {case_result.case_id} score={case_result.score:.2f}")
+        if case_result.error:
+            print(f"  error: {case_result.error}")
 
     _write_report(args.output, results)
     print(f"\nEvaluation report written to: {args.output.resolve()}")
