@@ -1,0 +1,23 @@
+[
+  {
+    "case_id": "reasoning_liar_paradox",
+    "agent": "reasoning",
+    "task": "Analyze the text and provide a coherent conclusion.",
+    "input_text": "This statement is false. If it is true, then it must be false; if false, then it becomes true.",
+    "expected_outcome": "Identify the paradox, explain why it is self-referential, and provide a careful final conclusion about unresolved contradiction."
+  },
+  {
+    "case_id": "reasoning_socratic_claim",
+    "agent": "reasoning",
+    "task": "Extract claims and synthesize a logically consistent interpretation.",
+    "input_text": "Socrates said he knew nothing, but he also claimed that recognizing one's ignorance is a form of wisdom.",
+    "expected_outcome": "Extract key claims and conclude that Socratic wisdom can be interpreted as meta-knowledge rather than factual omniscience."
+  },
+  {
+    "case_id": "research_llm_judge_definition",
+    "agent": "research",
+    "task": "Research what an LLM judge is and summarize key characteristics.",
+    "input_text": "What is an LLM judge in agent evaluation, and what are its main strengths and limitations?",
+    "expected_outcome": "Define LLM judge clearly, and include both strengths and limitations in the response."
+  }
+]
