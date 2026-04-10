@@ -1,15 +1,24 @@
+import json
 import os
+from pathlib import Path
 from typing import Any
+
+import pytest
 
 os.environ.setdefault("GEMINI_API_KEY", "test-key")
 
 from agent.reasoning_graph import ClaimsList, ConstraintsList, SolverIteration
 from agent import reasoning_graph as reasoning_graph_module
 
+DATASET_PATH = (
+    Path(__file__).resolve().parent.parent / "test_data" / "public_reasoning_dataset.json"
+)
+PUBLIC_REASONING_DATASET = json.loads(DATASET_PATH.read_text(encoding="utf-8"))
+
 
 class _FakeLLM:
-    def __init__(self, state: dict[str, Any]) -> None:
-        self._state = state
+    def __init__(self, expected_claim_count: int = 3) -> None:
+        self.expected_claim_count = expected_claim_count
         self._schema = None
         self.last_prompt = None
 
@@ -22,9 +31,8 @@ class _FakeLLM:
         if self._schema is ClaimsList:
             return ClaimsList(
                 claims=[
-                    "The treaty was signed in 1648.",
-                    "The same text also claims the war ended in 1649.",
-                    "The narrator says both claims come from the same archive.",
+                    f"Extracted claim {idx + 1}"
+                    for idx in range(self.expected_claim_count)
                 ],
                 rationale="Split the historical text into distinct factual statements.",
             )
@@ -51,31 +59,29 @@ class _FakeLLM:
         return _Response()
 
 
-def test_extract_claims_supports_complex_text(monkeypatch) -> None:
-    state = {
-        "input_text": (
-            "The chronicle says the treaty was signed in 1648, yet another chapter says "
-            "the war ended in 1649, and both claims are attributed to one archive."
-        )
-    }
-    fake_llm = _FakeLLM(state)
+@pytest.mark.parametrize("dataset_case", PUBLIC_REASONING_DATASET)
+def test_extract_claims_supports_complex_text(monkeypatch, dataset_case) -> None:
+    state = {"input_text": dataset_case["text"]}
+    fake_llm = _FakeLLM(expected_claim_count=dataset_case["expected_claim_count"])
 
     monkeypatch.setattr(reasoning_graph_module, "_get_llm", lambda *_: fake_llm)
 
     result = reasoning_graph_module.extract_claims(state, {})
 
-    assert len(result["claims"]) == 3
+    assert len(result["claims"]) == dataset_case["expected_claim_count"]
     assert "Claim Extraction" in result["reasoning_path"][0]
-    assert "identified 3 claim(s)" in result["reasoning_path"][0]
+    assert (
+        f"identified {dataset_case['expected_claim_count']} claim(s)"
+        in result["reasoning_path"][0]
+    )
     assert "Text to" in fake_llm.last_prompt
+    assert dataset_case["text"] in fake_llm.last_prompt
 
 
 def test_reasoning_graph_analyzes_complex_text_end_to_end(monkeypatch) -> None:
+    dataset_case = PUBLIC_REASONING_DATASET[2]
     initial_state = {
-        "input_text": (
-            "A philosophical essay claims free will is real, then says every decision is "
-            "fully determined by prior causes, and finally argues moral responsibility still holds."
-        ),
+        "input_text": dataset_case["text"],
         "claims": [],
         "constraints": [],
         "solver_notes": [],
@@ -87,13 +93,14 @@ def test_reasoning_graph_analyzes_complex_text_end_to_end(monkeypatch) -> None:
         "final_conclusion": "",
         "reasoning_model": "gemini-2.5-flash",
     }
+    fake_llm = _FakeLLM(expected_claim_count=dataset_case["expected_claim_count"])
     monkeypatch.setattr(
-        reasoning_graph_module, "_get_llm", lambda state, config: _FakeLLM(state)
+        reasoning_graph_module, "_get_llm", lambda state, config: fake_llm
     )
 
     result = reasoning_graph_module.reasoning_graph.invoke(initial_state)
 
-    assert len(result["claims"]) == 3
+    assert len(result["claims"]) == dataset_case["expected_claim_count"]
     assert result["is_consistent"] is True
     assert result["iteration_count"] == 1
     assert "consistent interpretation was produced" in result["final_conclusion"].lower()

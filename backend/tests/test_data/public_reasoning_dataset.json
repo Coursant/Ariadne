@@ -1,0 +1,23 @@
+[
+  {
+    "id": "liar_paradox",
+    "domain": "logic",
+    "source": "Public-domain logical paradox formulation",
+    "text": "This statement is false. If the statement is true, then what it says must hold: it is false. But if it is false, then what it says does not hold, so it must be true. Therefore the statement is both true and false.",
+    "expected_claim_count": 4
+  },
+  {
+    "id": "trolley_dilemma",
+    "domain": "ethics",
+    "source": "Public-domain ethics thought experiment summary",
+    "text": "It is always wrong to use a person merely as a means to an end. Redirecting a runaway trolley to kill one person in order to save five uses that one person as a means. Therefore it is wrong to redirect the trolley. Yet allowing five people to die when you could prevent it seems equally wrong.",
+    "expected_claim_count": 4
+  },
+  {
+    "id": "historical_timeline_conflict",
+    "domain": "history",
+    "source": "Public-domain style historical contradiction example",
+    "text": "The chronicle says the treaty was signed in 1648, yet another chapter says the war ended in 1649, and both claims are attributed to one archive.",
+    "expected_claim_count": 3
+  }
+]
