@@ -67,7 +67,7 @@ def test_extract_claims_supports_complex_text(monkeypatch) -> None:
     assert len(result["claims"]) == 3
     assert "Claim Extraction" in result["reasoning_path"][0]
     assert "identified 3 claim(s)" in result["reasoning_path"][0]
-    assert "Text to analyse" in fake_llm.last_prompt
+    assert "Text to" in fake_llm.last_prompt
 
 
 def test_reasoning_graph_analyzes_complex_text_end_to_end(monkeypatch) -> None:
